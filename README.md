@@ -1,130 +1,118 @@
-# Traveloo Scooter Rental System
+# Traveloo Scooter Rental App
 
-A comprehensive scooter rental management system for Traveloo, based in La Ferme, Rodrigues Island, Mauritius.
+A comprehensive scooter rental management system built with Django, featuring booking management, payment integration, and real-time GPS tracking.
+
+## Developer
+- **Name**: Joseph Jonathan COLLET
+- **Role**: Lead Developer
 
 ## Features
 
-- Custom booking engine
-- Financial management (invoices & contracts)
-- MCB Juice payment integration
-- WhatsApp automated messaging
-- Scooter availability calendar
-- GPS tracking integration
-- Mauritius fiscal compliance
-
-## Technical Stack
-
-- Frontend: HTML5, CSS3, JavaScript
-- Backend: Django 5.0
-- Database: PostgreSQL
-- Server: Ubuntu 20.04+ with Nginx and Gunicorn
-- WhatsApp Integration: Twilio
-- CI/CD: GitHub Actions
+- 🛵 Scooter Management & Tracking
+- 📅 Booking System
+- 💳 Payment Processing (MCB Juice Integration)
+- 📍 Real-time GPS Tracking
+- 🗺️ Geofencing Capabilities
+- 📱 WhatsApp Notifications
 
 ## Prerequisites
 
-- Python 3.10+
-- PostgreSQL 14+
-- Node.js 18+ (for frontend build)
-- Ubuntu 20.04+ (for production)
+- Python 3.11 or higher
+- Git
+- PostgreSQL
+- MCB Juice API credentials
+- Twilio account (for WhatsApp notifications)
 
-## Local Development Setup
+## Installation
 
-1. Clone the repository:
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/traveloo-scooter-rental.git
-   cd traveloo-scooter-rental
+   git clone https://github.com/Dykel/TravelooApp.git
+   cd TravelooApp
    ```
 
-2. Create and activate virtual environment:
+2. **Set up a virtual environment**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   .\venv\Scripts\activate   # Windows
+   
+   # On Windows
+   .\venv\Scripts\activate
+   
+   # On Unix or MacOS
+   source venv/bin/activate
    ```
 
-3. Install dependencies:
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
+4. **Environment Setup**
    ```bash
+   # Copy the example environment file
    cp .env.example .env
+   
    # Edit .env with your configuration
+   # Update the following variables:
+   # - SECRET_KEY
+   # - DATABASE_URL
+   # - MCB_JUICE_API_KEY
+   # - TWILIO_ACCOUNT_SID
+   # - TWILIO_AUTH_TOKEN
+   # - GPS_TRACKER_API_KEY
    ```
 
-5. Run migrations:
+5. **Database Setup**
    ```bash
    python manage.py migrate
+   python manage.py createsuperuser
    ```
 
-6. Start development server:
+6. **Run the Development Server**
    ```bash
    python manage.py runserver
    ```
 
-## Production Deployment
+The application will be available at `http://localhost:8000`
 
-1. Update system packages:
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   ```
-
-2. Install dependencies:
-   ```bash
-   sudo apt install python3-pip python3-venv nginx postgresql
-   ```
-
-3. Clone and setup:
-   ```bash
-   git clone https://github.com/your-username/traveloo-scooter-rental.git
-   cd traveloo-scooter-rental
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-4. Configure Nginx and Gunicorn:
-   ```bash
-   # Configure Nginx sites-available
-   # Setup Gunicorn systemd service
-   ```
-
-5. Start services:
-   ```bash
-   sudo systemctl start nginx
-   sudo systemctl start gunicorn
-   ```
-
-## Environment Variables
-
-Create a `.env` file with the following variables:
+## Project Structure
 
 ```
-DEBUG=False
-SECRET_KEY=your-secret-key
-DATABASE_URL=postgres://user:password@localhost:5432/dbname
-ALLOWED_HOSTS=.yourdomain.com
-TWILIO_ACCOUNT_SID=your-sid
-TWILIO_AUTH_TOKEN=your-token
-MCB_JUICE_API_KEY=your-key
+traveloo-scooter-rental/
+├── bookings/           # Booking management
+├── payments/           # Payment processing
+├── scooters/          # Scooter management
+├── tracking/          # GPS tracking and geofencing
+├── templates/         # HTML templates
+├── traveloo/          # Project settings
+└── static/           # Static files
 ```
+
+## API Documentation
+
+The API documentation is available at `/api/docs/` when running the server.
 
 ## Testing
 
-Run tests with:
+Run the test suite:
 ```bash
-pytest
+python manage.py test
 ```
 
-## CI/CD Pipeline
+## Deployment
 
-The project uses GitHub Actions for:
-- Code quality checks
-- Automated testing
-- Deployment to production
+1. Set up your production environment
+2. Update `.env` with production settings
+3. Follow the deployment guide in `deploy/setup.sh`
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-Copyright © 2025 Traveloo. All rights reserved.
+This project is licensed under the MIT License - see the LICENSE file for details.
