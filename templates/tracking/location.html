@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ scooter.name }} Location - Traveloo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #map { height: 500px; }
+    .location-timeline {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: 10px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Map -->
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ scooter.name }} Location</h5>
+                    {% if history %}
+                        <span class="badge bg-light text-dark">
+                            Last updated: {{ history.first.timestamp|timesince }} ago
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Total Distance</h6>
+                            <h4 id="total-distance">Calculating...</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Average Speed</h6>
+                            <h4 id="avg-speed">
+                                {% if history.first.speed %}
+                                    {{ history.first.speed|floatformat:1 }} km/h
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Battery Level</h6>
+                            <h4>
+                                {% if scooter.gps_tracker %}
+                                    {{ scooter.gps_tracker.battery_level }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Location Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Location History</h5>
+                </div>
+                <div class="card-body location-timeline">
+                    {% for location in history %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ location.timestamp|date:"H:i:s" }}</strong>
+                                {% if location.speed %}
+                                    <span class="text-muted">{{ location.speed|floatformat:1 }} km/h</span>
+                                {% endif %}
+                            </div>
+                            <p class="mb-1">
+                                Lat: {{ location.latitude|floatformat:6 }}<br>
+                                Lng: {{ location.longitude|floatformat:6 }}
+                            </p>
+                            {% if location.accuracy %}
+                                <small class="text-muted">
+                                    Accuracy: {{ location.accuracy }}m
+                                </small>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-center text-muted">No location history available</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    var map = L.map('map').setView([-19.7617, 63.3632], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Create path from location history
+    var locations = [
+        {% for location in history %}
+            [{{ location.latitude }}, {{ location.longitude }}],
+        {% endfor %}
+    ];
+
+    if (locations.length > 0) {
+        // Create path
+        var path = L.polyline(locations, {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.7
+        }).addTo(map);
+
+        // Add markers for start and end points
+        var startIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color: #4CAF50; padding: 5px; border-radius: 50%;'></div>",
+            iconSize: [10, 10]
+        });
+
+        var endIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color: #f44336; padding: 5px; border-radius: 50%;'></div>",
+            iconSize: [10, 10]
+        });
+
+        L.marker(locations[0], {icon: startIcon})
+            .bindPopup('Start Point')
+            .addTo(map);
+
+        L.marker(locations[locations.length - 1], {icon: endIcon})
+            .bindPopup('Current Location')
+            .addTo(map);
+
+        // Fit map to path bounds
+        map.fitBounds(path.getBounds());
+
+        // Calculate total distance
+        var totalDistance = 0;
+        for (var i = 1; i < locations.length; i++) {
+            totalDistance += map.distance(locations[i-1], locations[i]);
+        }
+        document.getElementById('total-distance').textContent = 
+            (totalDistance / 1000).toFixed(2) + ' km';
+    }
+
+    // Real-time updates
+    function updateLocation() {
+        fetch('/tracking/get-location/{{ scooter.id }}/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.location) {
+                    // Update last marker position
+                    var lastMarker = L.marker([data.location.latitude, data.location.longitude])
+                        .bindPopup('Current Location')
+                        .addTo(map);
+                    
+                    // Update path
+                    path.addLatLng([data.location.latitude, data.location.longitude]);
+                    
+                    // Update stats
+                    if (data.location.speed) {
+                        document.getElementById('avg-speed').textContent = 
+                            data.location.speed.toFixed(1) + ' km/h';
+                    }
+                }
+            });
+    }
+
+    // Update location every 30 seconds
+    setInterval(updateLocation, 30000);
+</script>
+{% endblock %}

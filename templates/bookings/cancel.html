@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Booking - Traveloo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Cancel Booking</h5>
+                </div>
+                <div class="card-body">
+                    <h5>Are you sure you want to cancel this booking?</h5>
+                    
+                    <div class="alert alert-warning">
+                        <h6>Booking Details:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Reference:</strong> {{ booking.booking_reference }}</li>
+                            <li><strong>Scooter:</strong> {{ booking.scooter.name }}</li>
+                            <li><strong>Start Date:</strong> {{ booking.start_date|date:"d M Y H:i" }}</li>
+                            <li><strong>End Date:</strong> {{ booking.end_date|date:"d M Y H:i" }}</li>
+                            <li><strong>Total Amount:</strong> ${{ booking.total_amount }}</li>
+                        </ul>
+                    </div>
+
+                    <p class="text-muted">
+                        Please note: Cancellation might be subject to our cancellation policy.
+                        Contact support if you need assistance.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                Yes, Cancel Booking
+                            </button>
+                            <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-outline-secondary">
+                                No, Keep Booking
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

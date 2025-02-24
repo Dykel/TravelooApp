@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Refund - Traveloo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Request Refund</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6>Payment Details:</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><strong>Transaction ID:</strong> {{ payment.transaction_id }}</li>
+                            <li><strong>Amount:</strong> ${{ payment.amount }}</li>
+                            <li><strong>Date:</strong> {{ payment.payment_date|date:"d M Y H:i" }}</li>
+                            <li><strong>Booking:</strong> {{ payment.booking.booking_reference }}</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason for Refund</label>
+                            <textarea name="reason" id="reason" class="form-control" rows="4" required></textarea>
+                            <div class="form-text">
+                                Please provide a detailed reason for requesting a refund.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h6>Please Note:</h6>
+                            <ul class="mb-0">
+                                <li>Refunds are subject to our refund policy</li>
+                                <li>Processing may take 3-5 business days</li>
+                                <li>Refund will be sent to your original payment method</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                Submit Refund Request
+                            </button>
+                            <a href="{% url 'payments:history' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

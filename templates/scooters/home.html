@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Traveloo - Available Scooters{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Search Form -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Search Availability</h5>
+                <form method="get">
+                    {{ search_form|crispy }}
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scooter Grid -->
+    <div class="col-md-9">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for scooter in scooters %}
+                <div class="col">
+                    <div class="card h-100">
+                        {% if scooter.image %}
+                            <img src="{{ scooter.image.url }}" class="card-img-top" alt="{{ scooter.name }}">
+                        {% else %}
+                            <img src="{% static 'images/scooter-placeholder.jpg' %}" class="card-img-top" alt="Placeholder">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ scooter.name }}</h5>
+                            <p class="card-text">{{ scooter.description|truncatewords:20 }}</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-tag me-2"></i>Hourly: ${{ scooter.hourly_rate }}</li>
+                                <li><i class="fas fa-calendar me-2"></i>Daily: ${{ scooter.daily_rate }}</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a href="{% url 'scooters:detail' scooter.id %}" class="btn btn-primary w-100">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center">
+                    <h3>No scooters available for the selected dates</h3>
+                    <p>Please try different dates or contact us for assistance.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if scooters.paginator.num_pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if scooters.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ scooters.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in scooters.paginator.page_range %}
+                        <li class="page-item {% if scooters.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if scooters.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ scooters.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Bookings - Traveloo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">My Bookings</h2>
+
+    <div class="row">
+        <div class="col-12">
+            {% if bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Booking Ref</th>
+                                <th>Scooter</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td>{{ booking.booking_reference }}</td>
+                                    <td>{{ booking.scooter.name }}</td>
+                                    <td>{{ booking.start_date|date:"d M Y H:i" }}</td>
+                                    <td>{{ booking.end_date|date:"d M Y H:i" }}</td>
+                                    <td>${{ booking.total_amount }}</td>
+                                    <td>
+                                        <span class="badge {% if booking.status == 'confirmed' %}bg-success
+                                                         {% elif booking.status == 'pending' %}bg-warning
+                                                         {% elif booking.status == 'cancelled' %}bg-danger
+                                                         {% elif booking.status == 'completed' %}bg-info
+                                                         {% else %}bg-secondary{% endif %}">
+                                            {{ booking.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'bookings:detail' booking.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                            {% if booking.status in 'pending,confirmed' %}
+                                                <a href="{% url 'bookings:cancel' booking.id %}" 
+                                                   class="btn btn-sm btn-outline-danger">
+                                                    Cancel
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <h4>You haven't made any bookings yet</h4>
+                    <p class="text-muted">Start exploring our scooters and make your first booking!</p>
+                    <a href="{% url 'scooters:home' %}" class="btn btn-primary mt-3">
+                        Browse Scooters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking {{ booking.booking_reference }} - Traveloo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Booking Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Booking Details</h5>
+                    <span class="badge {% if booking.status == 'confirmed' %}bg-success
+                                   {% elif booking.status == 'pending' %}bg-warning
+                                   {% elif booking.status == 'cancelled' %}bg-danger
+                                   {% elif booking.status == 'completed' %}bg-info
+                                   {% else %}bg-secondary{% endif %}">
+                        {{ booking.status|title }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Booking Reference:</strong><br>{{ booking.booking_reference }}</p>
+                            <p><strong>Start Date:</strong><br>{{ booking.start_date|date:"d M Y H:i" }}</p>
+                            <p><strong>End Date:</strong><br>{{ booking.end_date|date:"d M Y H:i" }}</p>
+                            <p><strong>Total Amount:</strong><br>${{ booking.total_amount }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Scooter:</strong><br>{{ booking.scooter.name }}</p>
+                            <p><strong>License Plate:</strong><br>{{ booking.scooter.license_plate }}</p>
+                            <p><strong>Booking Date:</strong><br>{{ booking.created_at|date:"d M Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% if booking.status in 'pending,confirmed' %}
+                    <div class="card-footer">
+                        <a href="{% url 'bookings:cancel' booking.id %}" class="btn btn-danger">
+                            Cancel Booking
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Contract Details -->
+            {% if booking.contract %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Contract Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Contract Status:</strong> 
+                            {% if booking.contract.signed_by_customer %}
+                                <span class="text-success">Signed</span>
+                            {% else %}
+                                <span class="text-warning">Pending Signature</span>
+                            {% endif %}
+                        </p>
+                        {% if booking.contract.signed_date %}
+                            <p><strong>Signed Date:</strong> {{ booking.contract.signed_date|date:"d M Y H:i" }}</p>
+                        {% endif %}
+                        {% if booking.contract.contract_file %}
+                            <a href="{{ booking.contract.contract_file.url }}" class="btn btn-outline-primary" target="_blank">
+                                <i class="fas fa-file-pdf me-2"></i>View Contract
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Scooter Location -->
+            {% if booking.status == 'active' and booking.scooter.locations.exists %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Current Location</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="map" style="height: 300px;"></div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <!-- Invoice Details -->
+            {% if booking.invoice %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Invoice Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Invoice Number:</strong><br>{{ booking.invoice.invoice_number }}</p>
+                        <p><strong>Amount:</strong><br>${{ booking.invoice.amount }}</p>
+                        <p><strong>Tax (15%):</strong><br>${{ booking.invoice.tax_amount }}</p>
+                        <p><strong>Total Amount:</strong><br>${{ booking.invoice.total_amount }}</p>
+                        <p><strong>Due Date:</strong><br>{{ booking.invoice.due_date|date:"d M Y" }}</p>
+                        <p><strong>Status:</strong><br>
+                            <span class="badge {% if booking.invoice.status == 'paid' %}bg-success
+                                           {% elif booking.invoice.status == 'overdue' %}bg-danger
+                                           {% else %}bg-warning{% endif %}">
+                                {{ booking.invoice.status|title }}
+                            </span>
+                        </p>
+                        {% if booking.invoice.status != 'paid' %}
+                            <a href="#" class="btn btn-primary w-100">
+                                Pay Now with MCB Juice
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Support Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Need Help?</h5>
+                </div>
+                <div class="card-body">
+                    <p>If you need assistance with your booking, please contact us:</p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-phone me-2"></i>+230 5XXX XXXX</li>
+                        <li><i class="fab fa-whatsapp me-2"></i>+230 5XXX XXXX</li>
+                        <li><i class="fas fa-envelope me-2"></i>support@traveloo.mu</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if booking.status == 'active' and booking.scooter.locations.exists %}
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([-19.7617, 63.3632], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var marker = L.marker([
+            {{ booking.scooter.locations.first.latitude }},
+            {{ booking.scooter.locations.first.longitude }}
+        ]).addTo(map);
+        
+        map.setView([
+            {{ booking.scooter.locations.first.latitude }},
+            {{ booking.scooter.locations.first.longitude }}
+        ], 15);
+    </script>
+{% endif %}
+{% endblock %}

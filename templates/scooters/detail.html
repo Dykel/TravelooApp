@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ scooter.name }} - Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #map { height: 300px; }
+    .availability-calendar {
+        display: flex;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+    .date-box {
+        min-width: 100px;
+        text-align: center;
+        padding: 10px;
+        margin: 5px;
+        border-radius: 5px;
+    }
+    .available {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+    .unavailable {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Scooter Details -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="row g-0">
+                <div class="col-md-6">
+                    {% if scooter.image %}
+                        <img src="{{ scooter.image.url }}" class="img-fluid rounded-start" alt="{{ scooter.name }}">
+                    {% else %}
+                        <img src="{% static 'images/scooter-placeholder.jpg' %}" class="img-fluid rounded-start" alt="Placeholder">
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <div class="card-body">
+                        <h2 class="card-title">{{ scooter.name }}</h2>
+                        <p class="card-text">{{ scooter.description }}</p>
+                        <ul class="list-unstyled">
+                            <li><strong>Model:</strong> {{ scooter.model }}</li>
+                            <li><strong>Year:</strong> {{ scooter.year }}</li>
+                            <li><strong>License Plate:</strong> {{ scooter.license_plate }}</li>
+                            <li><strong>Hourly Rate:</strong> ${{ scooter.hourly_rate }}</li>
+                            <li><strong>Daily Rate:</strong> ${{ scooter.daily_rate }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Availability Calendar -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h4>Availability Next 7 Days</h4>
+                <div class="availability-calendar">
+                    {% for day in availability %}
+                        <div class="date-box {% if day.available %}available{% else %}unavailable{% endif %}">
+                            <div class="date">{{ day.date|date:"D" }}</div>
+                            <div class="date">{{ day.date|date:"d M" }}</div>
+                            <div class="status">
+                                {% if day.available %}
+                                    <i class="fas fa-check text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-times text-danger"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Location Map -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h4>Current Location</h4>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Form and Maintenance Records -->
+    <div class="col-md-4">
+        <!-- Quick Booking -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-title">Quick Booking</h4>
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'bookings:create' scooter.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Start Date & Time</label>
+                            <input type="datetime-local" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date & Time</label>
+                            <input type="datetime-local" name="end_date" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Book Now</button>
+                    </form>
+                {% else %}
+                    <p>Please <a href="{% url 'account_login' %}">login</a> to book this scooter.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Maintenance Records -->
+        {% if maintenance_records %}
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Recent Maintenance</h4>
+                    <div class="list-group list-group-flush">
+                        {% for record in maintenance_records %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ record.date|date:"d M Y" }}</h6>
+                                    <small>${{ record.cost }}</small>
+                                </div>
+                                <p class="mb-1">{{ record.description|truncatewords:20 }}</p>
+                                <small>By: {{ record.performed_by }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    var map = L.map('map').setView([-19.7617, 63.3632], 13);  // Rodrigues Island coordinates
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    {% if scooter.locations.exists %}
+        var marker = L.marker([{{ scooter.locations.first.latitude }}, {{ scooter.locations.first.longitude }}])
+            .addTo(map)
+            .bindPopup("{{ scooter.name }}");
+        map.setView([{{ scooter.locations.first.latitude }}, {{ scooter.locations.first.longitude }}], 15);
+    {% endif %}
+</script>
+{% endblock %}

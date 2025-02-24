@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tracking Dashboard - Traveloo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    #map { height: 600px; }
+    .tracker-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .tracker-item {
+        cursor: pointer;
+    }
+    .tracker-item:hover {
+        background-color: #f8f9fa;
+    }
+    .battery-indicator {
+        width: 50px;
+        height: 20px;
+        display: inline-block;
+        position: relative;
+        border: 2px solid #ccc;
+        border-radius: 3px;
+    }
+    .battery-level {
+        height: 100%;
+        background-color: #28a745;
+        transition: width 0.3s ease;
+    }
+    .battery-critical {
+        background-color: #dc3545;
+    }
+    .battery-warning {
+        background-color: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Scooter Trackers</h5>
+                </div>
+                <div class="card-body p-0 tracker-list">
+                    <div class="list-group list-group-flush">
+                        {% for tracker in trackers %}
+                            <div class="list-group-item tracker-item" 
+                                 data-tracker-id="{{ tracker.id }}"
+                                 data-lat="{{ tracker.scooter.locations.first.latitude }}"
+                                 data-lng="{{ tracker.scooter.locations.first.longitude }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ tracker.scooter.name }}</h6>
+                                        <small class="text-muted">
+                                            {{ tracker.device_id }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="battery-indicator">
+                                            <div class="battery-level {% if tracker.battery_level < 20 %}battery-critical
+                                                                    {% elif tracker.battery_level < 50 %}battery-warning{% endif %}"
+                                                 style="width: {{ tracker.battery_level }}%">
+                                            </div>
+                                        </div>
+                                        <small class="d-block text-muted">
+                                            {{ tracker.last_seen|timesince }} ago
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Alerts -->
+            <div class="card mt-3">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Recent Alerts</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for alert in recent_alerts %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">{{ alert.zone.name }}</h6>
+                                <p class="mb-1">
+                                    Scooter {{ alert.tracker.scooter.name }} 
+                                    {{ alert.alert_type }}ed zone
+                                </p>
+                                <small class="text-muted">
+                                    {{ alert.timestamp|timesince }} ago
+                                </small>
+                            </div>
+                        {% empty %}
+                            <div class="list-group-item text-center text-muted">
+                                No recent alerts
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    var map = L.map('map').setView([-19.7617, 63.3632], 13);  // Rodrigues Island coordinates
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Store markers
+    var markers = {};
+    var geofenceCircles = {};
+
+    // Add geofence zones
+    {% for zone in geofence_zones %}
+        var circle = L.circle([{{ zone.center_latitude }}, {{ zone.center_longitude }}], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.2,
+            radius: {{ zone.radius }}
+        }).addTo(map);
+        
+        circle.bindPopup("{{ zone.name }}<br>{{ zone.description }}");
+        geofenceCircles[{{ zone.id }}] = circle;
+    {% endfor %}
+
+    // Add markers for each tracker
+    {% for tracker in trackers %}
+        {% if tracker.scooter.locations.exists %}
+            var marker = L.marker([
+                {{ tracker.scooter.locations.first.latitude }},
+                {{ tracker.scooter.locations.first.longitude }}
+            ]).addTo(map);
+            
+            marker.bindPopup(
+                "<strong>{{ tracker.scooter.name }}</strong><br>" +
+                "Battery: {{ tracker.battery_level }}%<br>" +
+                "Last seen: {{ tracker.last_seen|timesince }} ago"
+            );
+            
+            markers[{{ tracker.id }}] = marker;
+        {% endif %}
+    {% endfor %}
+
+    // Handle tracker item clicks
+    document.querySelectorAll('.tracker-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            var trackerId = this.dataset.trackerId;
+            var lat = parseFloat(this.dataset.lat);
+            var lng = parseFloat(this.dataset.lng);
+            
+            if (markers[trackerId]) {
+                map.setView([lat, lng], 15);
+                markers[trackerId].openPopup();
+            }
+        });
+    });
+
+    // Real-time updates
+    function updateLocations() {
+        fetch('/tracking/get-locations/')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(location => {
+                    if (markers[location.tracker_id]) {
+                        markers[location.tracker_id].setLatLng([
+                            location.latitude,
+                            location.longitude
+                        ]);
+                        
+                        markers[location.tracker_id].getPopup().setContent(
+                            "<strong>" + location.scooter_name + "</strong><br>" +
+                            "Battery: " + location.battery_level + "%<br>" +
+                            "Last seen: " + location.last_seen
+                        );
+                    }
+                });
+            });
+    }
+
+    // Update locations every 30 seconds
+    setInterval(updateLocations, 30000);
+</script>
+{% endblock %}

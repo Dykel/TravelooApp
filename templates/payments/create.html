@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment - Traveloo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Payment Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Booking Information</h6>
+                            <p><strong>Reference:</strong> {{ booking.booking_reference }}</p>
+                            <p><strong>Scooter:</strong> {{ booking.scooter.name }}</p>
+                            <p><strong>Duration:</strong> 
+                                {{ booking.start_date|date:"d M Y H:i" }} to 
+                                {{ booking.end_date|date:"d M Y H:i" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Payment Summary</h6>
+                            <p><strong>Amount:</strong> ${{ booking.total_amount }}</p>
+                            <p><strong>Transaction ID:</strong> {{ payment.transaction_id }}</p>
+                            <p><strong>Status:</strong> {{ payment.status|title }}</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6>Payment Instructions:</h6>
+                        <ol class="mb-0">
+                            <li>Click the "Pay with MCB Juice" button below</li>
+                            <li>You will be redirected to MCB Juice secure payment page</li>
+                            <li>Complete the payment using your MCB Juice account</li>
+                            <li>Wait for confirmation before closing the payment window</li>
+                        </ol>
+                    </div>
+
+                    <form action="{{ mcb_juice_url }}" method="post" id="paymentForm">
+                        {% for key, value in payment_data.items %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endfor %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-credit-card me-2"></i>Pay with MCB Juice
+                            </button>
+                            <a href="{% url 'bookings:detail' booking.id %}" class="btn btn-outline-secondary">
+                                Cancel Payment
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6>Secure Payment</h6>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-lock me-2"></i>
+                        Your payment is processed securely through MCB Juice. We do not store your payment details.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Disable form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+</script>
+{% endblock %}
